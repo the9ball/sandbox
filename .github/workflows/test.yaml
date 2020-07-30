@@ -1,0 +1,31 @@
+name: test
+on:
+  delete:
+    branches:
+      - "branch*"
+  workflow_dispatch:
+    branch:
+      description: "branch name to manifest"
+      required: true
+      default: ""
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: echo "::set-env name=REMOTE_BRANCH::${REMOTE_BRANCH}"
+        env:
+          # どちらかが有効でどちらかが空文字列なので単純連結することで有効な方を採用できる
+          REMOTE_BRANCH: ${{ github.event.ref }}${{ github.event.inputs.branch }}
+      - name: branch
+        run: |
+          echo ${REMOTE_BRANCH}
+          echo ${{ env.REMOTE_BRANCH }}
+        if: "startsWith(env.REMOTE_BRANCH, 'branch')"
+      - name: other
+        run: |
+          echo ${REMOTE_BRANCH}
+          echo ${{ env.REMOTE_BRANCH }}
+          exit 1
+        if: "!startsWith(env.REMOTE_BRANCH, 'branch')"
