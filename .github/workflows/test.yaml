@@ -1,0 +1,36 @@
+name: test
+on:
+  push:
+    branches:
+      - "test/*"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: |
+          echo "::set-env name=BRANCH::$( echo ${{ github.ref }} | sed -e 's|refs/heads/||' )"
+          echo "::set-env name=BRANCH::$( echo ${{ github.ref }} | sed -e 's|refs/heads/||' )"
+      # - uses: octokit/request-action@v2.x
+      #   id: get_latest_release
+      #   with:
+      #     ACTIONS_STEP_DEBUG: true
+      #     route: POST /repos/:repo/pulls
+      #     repo: ${{ github.repository }}
+      #     title: "test"
+      #     head: ${{ env.BRANCH }}
+      #     base: "master"
+      #     body: "bodytext"
+      #     maintainer_can_modify: true
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUBTOKEN }}
+      - uses: octokit/request-action@v2.x
+        id: get_latest_release
+        with:
+          ACTIONS_STEP_DEBUG: true
+          route: DELETE /repos/:repo/git/refs/:ref
+          repo: ${{ github.repository }}
+          ref: test_test
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUBTOKEN }}
