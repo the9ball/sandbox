@@ -1,0 +1,29 @@
+name: test-workflow
+on:
+  push:
+    branches:
+      - "master"
+      - "test/*"
+
+jobs:
+  testA:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - run: |
+          sleep 10
+
+  testB:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - run: |
+          sleep 10
+
+  testC:
+    needs: [ testA, testB ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - run: |
+          sleep 10

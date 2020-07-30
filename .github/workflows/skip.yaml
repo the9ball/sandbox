@@ -1,0 +1,55 @@
+name: skip
+on:
+  pull_request:
+    types:
+      - labeled
+      - synchronize
+
+jobs:
+  skip:
+    if: "contains(github.event.pull_request.labels.*.name, 'skip ci')"
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - run: sleep 1
+      - run: |
+          echo ${{ github.event.pull_request.head.ref }}
+      - run: echo "::set-env name=GIT_BRANCH::${{ github.event.pull_request.head.ref }}"
+      - name: commands
+        run: |
+          set -ux
+          function API() {
+            curl -H "Authorization: token ${GITHUB_TOKEN}" $* 2>/dev/null
+          }
+
+          # キャンセル対象のworkflowのIDを列挙する。
+          # その際、このworkflow以外は全てキャンセル対象とする。
+          # https://developer.github.com/v3/actions/workflows/#list-repository-workflows
+          # memo:特定のworkflowだけを指定したい場合は下のactions/workflows/${wid}/runsをファイル名指定に変更することができる。
+          workflow_ids=$(API https://api.github.com/repos/${{ github.repository }}/actions/workflows |
+            jq ".workflows[] | select(.name != \"${{ github.workflow }}\") | .id")
+          for wid in ${workflow_ids}; do
+            echo * workflow-id=${wid}
+            # キャンセル対象のworkflowが実行されたrunのIDを列挙する。
+            # その際、このworkflowと同じコミットを対象としたもののみに限定する。
+            # これは別のPRへのテストなどを除外する必要があるためである。
+            # また、PRがマージされたものに対してはマージコミットが作られることにより別のCommit-SHAになるはずであるため問題ない。
+            # https://developer.github.com/v3/actions/workflow-runs/#list-workflow-runs
+            echo ===
+            API https://api.github.com/repos/${{ github.repository }}/actions/workflows/${wid}/runs
+            echo ===
+            run_ids=$(API https://api.github.com/repos/${{ github.repository }}/actions/workflows/${wid}/runs |
+              jq ".workflow_runs[] | select(.head_branch == \"${GIT_BRANCH}\" and .status != \"completed\") | .id")
+            for rid in ${run_ids}; do
+              echo ** run-id=${rid}
+              # 指定のrunをキャンセルする。
+              # https://developer.github.com/v3/actions/workflow-runs/#cancel-a-workflow-run
+              API -X POST https://api.github.com/repos/${{ github.repository }}/actions/runs/${rid}/cancel 1>/dev/null
+            done
+          done
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      # - run: sleep 100
+      # - uses: styfle/cancel-workflow-action@0.4.1
+      #   with:
+      #     access_token: ${{ github.token }}
