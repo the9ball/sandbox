@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - run: echo "::set-env name=REMOTE_BRANCH::${REMOTE_BRANCH}"
+      - run: echo "::set-env name=REMOTE_BRANCH::${REMOTE_BRANCH#refs/heads/}"
         env:
           # どちらかが有効でどちらかが空文字列なので単純連結することで有効な方を採用できる
           REMOTE_BRANCH: ${{ github.event.ref }}${{ github.event.inputs.branch }}
