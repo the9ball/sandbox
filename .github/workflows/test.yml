@@ -1,13 +1,13 @@
 name: test
 on:
-  push:
-    branches:
-      - "master"
+  pull_request:
+    types: [labeled, unlabeled, synchronize]
 
 jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      OUTPUTDIR: ${{ github.workspace }}/temp
     steps:
-      - run: exit 0
-        if: failure()
+      - run: echo ${OUTPUTDIR}
