@@ -1,13 +1,27 @@
 name: test
 on:
   push:
-    branches:
-      - "master"
 
 jobs:
-  test:
+  upper:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - run: exit 0
-        if: failure()
+      - run: echo ${{ github.sha }} > sha.txt
+      - uses: actions/upload-artifact@v2
+        with:
+          name: temp
+          path: sha.txt
+
+  lower:
+    needs: [upper]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@v2
+        id: dl
+        with:
+          name: temp
+          path: ./
+      - run: cat ./sha.txt
+      - run: echo ${{ steps.dl.outputs.download-path }}
