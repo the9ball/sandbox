@@ -2,12 +2,11 @@ name: test
 on:
   push:
     branches:
-      - "master"
+      - "*"
 
 jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - run: exit 0
-        if: failure()
+      - run: echo ${{ github.event.pull_request.sha }}
