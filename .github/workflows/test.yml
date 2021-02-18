@@ -1,13 +1,18 @@
 name: test
 on:
   push:
-    branches:
-      - "master"
 
 jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - run: exit 0
-        if: failure()
+      - run: return 1
+
+  test2:
+    needs: ["test"]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: failure()
+    steps:
+      - run: echo "test2"
