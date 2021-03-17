@@ -1,12 +1,15 @@
 name: test
 on:
-  push:
-    branches:
-      - "*"
+  pull_request:
+    types:
+      - synchronize
+      - opened
+      - reopened
+      - ready_for_review
 
 jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - run: echo ${{ github.event.pull_request.sha }}
+      - run: echo ${{ github.event.pull_request.head.sha }}
