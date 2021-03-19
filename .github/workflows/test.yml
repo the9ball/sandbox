@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - run: return 1
+      - run: echo ""
 
   test2:
     needs: ["test"]
