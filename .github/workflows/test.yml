@@ -10,7 +10,28 @@ jobs:
       - run: echo ""
 
   test2:
-    needs: ["test"]
+    needs: [test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: return 1
+
+  test3:
+    needs: [test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: echo ""
+
+  final:
+    needs: ["test2", "test3"]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: echo ""
+
+  if_failure:
+    needs: ["final"]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     if: failure()
