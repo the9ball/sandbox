@@ -1,13 +1,61 @@
-name: test
+name: merge-for-featurebranches
 on:
+  workflow_dispatch:
   push:
-    branches:
-      - "master"
+    branch: ["master"]
 
 jobs:
-  test:
+  merge:
+    env:
+      branch: foo
+      upstream: hoge
+      GITHUB_TOKEN: ${{ github.token }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - run: exit 0
-        if: failure()
+      # https://docs.github.com/ja/rest/reference/pulls#create-a-pull-request
+      # このAPIの時点ではmergeableはnullで来るため判定できない
+      # 差分がなかったり、マージ先のブランチがなかったりすると200でエラーが返ってくる
+      # 既にPRが存在する場合も200でエラーが返ってくる
+      # つまり、正常にpull_numberが取れるのは、新規でPRが作成できた場合(コンフリクトの有無は関係なく)となる。
+      - name: Create Pull-Request
+        run: |
+          set -eux
+          response=$(
+            curl -X POST \
+              -H "Authorization: token ${GITHUB_TOKEN}" \
+              https://api.github.com/repos/${{ github.repository }}/pulls \
+              -s -D /dev/stderr -d @- <<EOF
+          {
+            "title": "Merge branch '${{ env.upstream }}' into ${{ env.branch }}",
+            "head": "${{ env.upstream }}",
+            "base": "${{ env.branch }}",
+            "body": "Created by https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          }
+          EOF
+          )
+          echo ${response}
+
+          pull_number=$(echo ${response} | jq ".number") # PR番号を取り出す
+          echo "pull_number=${pull_number}" >> $GITHUB_ENV
+      # https://docs.github.com/en/rest/reference/pulls#merge-a-pull-request
+      - name: Try Merge
+        run: |
+          set -eux
+          response=$(curl -X PUT \
+            -H "Authorization: token ${GITHUB_TOKEN}" \
+            https://api.github.com/repos/${{ github.repository }}/pulls/${pull_number}/merge \
+            -i -s
+          )
+          echo ${response}
+
+          http_code=$(echo ${response} | head -n1 | cut -d' ' -f2)
+          [[ ${http_code} == 200 ]] || exit 1
+        if: env.pull_number != 'null'
+      - name: Convert To Draft
+        run: |
+          curl -X PATCH \
+            -H "Authorization: token ${GITHUB_TOKEN}" \
+            https://api.github.com/repos/${{ github.repository }}/pulls/${pull_number} \
+            -i -s -d '{"draft":true}'
+        if: env.pull_number != 'null' && failure()
